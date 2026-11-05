@@ -57,9 +57,18 @@ const A = x => esc(JSON.stringify(x));
 const uniq = a => [...new Set(a)];
 const nz = t => String(t).toLowerCase().replace(/[\u00d7x*]/g, '*').replace(/\s+/g, ' ').trim();
 const match = (name, q) => { const n = nz(name); return nz(q).split(' ').filter(Boolean).every(w => n.includes(w)); };
+const jsonp = url => new Promise((res, rej) => {   // fallback when the browser blocks fetch: load the answer as a script
+  const cb = 'cb' + Math.random().toString(36).slice(2), s = document.createElement('script');
+  const done = () => { clearTimeout(t); delete window[cb]; s.remove(); };
+  const t = setTimeout(() => { done(); rej(new Error('the server did not answer')); }, 40000);
+  window[cb] = d => { done(); res(d); };
+  s.onerror = () => { done(); rej(new Error('blocked or unreachable')); };
+  s.src = url + '&callback=' + cb; document.head.appendChild(s);
+});
+const getJ = async url => { try { return await (await fetch(url)).json(); } catch (e) { return await jsonp(url); } };
 const run = async (fn, ...a) => fn === 'pubPhoto'
-  ? (await (await fetch(API + '?photo=' + encodeURIComponent(a[0]))).json()).img
-  : await (await fetch(API + '?pub=1&p=' + (a[0] ? 1 : 0) + '&c=' + encodeURIComponent((a[1] || []).join('~')) + '&s=' + encodeURIComponent(a[2] || ''))).json();
+  ? (await getJ(API + '?photo=' + encodeURIComponent(a[0]))).img
+  : await getJ(API + '?pub=1&p=' + (a[0] ? 1 : 0) + '&c=' + encodeURIComponent((a[1] || []).join('~')) + '&s=' + encodeURIComponent(a[2] || ''));
 const idbGet = async () => null, idbSet = async () => {};
 function toast(m) { const t = $('toast'); t.textContent = m; t.style.display = 'block'; clearTimeout(t._t); t._t = setTimeout(() => t.style.display = 'none', 2600); }
 let _act = 0; const _q = [];
