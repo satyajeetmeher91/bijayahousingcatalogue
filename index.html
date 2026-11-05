@@ -254,7 +254,7 @@ function render() {
     }).join('');
   fillThumbs();
 }
-run('pubData', PRICES, CATS, SIG).then(r => { P = r.items; if (CATS.length === 1 && P.length) catSel = catOf(P[0]); render(); }).catch(() => { $('view').innerHTML = '<div class="empty">Could not load the catalogue. Please try again.</div>'; });
+run('pubData', PRICES, CATS, SIG).then(r => { if (!r || !Array.isArray(r.items)) throw new Error((r && r.error) || 'no data received'); P = r.items; if (CATS.length === 1 && P.length) catSel = catOf(P[0]); render(); }).catch(e => { $('view').innerHTML = '<div class="empty">Could not load the catalogue. Please try again.<br><small>' + esc((e && e.message) || e) + '</small></div>'; });
 </script>
 </body>
 </html>
